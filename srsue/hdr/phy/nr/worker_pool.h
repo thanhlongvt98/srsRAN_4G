@@ -66,6 +66,14 @@ public:
   bool       has_valid_sr_resource(uint32_t sr_id);
   void       clear_pending_grants();
   void       get_metrics(phy_metrics_t& m);
+  void       set_pending_phr_context(uint32_t nof_prbs, bool is_msg3_grant)
+  {
+    phy_state.set_pending_phr_context(nof_prbs, is_msg3_grant);
+  }
+  float      get_latest_ul_power_db() const { return phy_state.get_latest_ul_power_db(); }
+  float      get_latest_rsrp_dbm() const { return phy_state.get_latest_rsrp_dbm(); }
+  uint32_t   get_latest_pusch_nof_prbs() const { return phy_state.get_latest_pusch_nof_prbs(); }
+  bool       get_latest_pusch_is_msg3() const { return phy_state.get_latest_pusch_is_msg3(); }
 
   /**
    * @brief Sets external CFO to compensate UL signal frequency offset

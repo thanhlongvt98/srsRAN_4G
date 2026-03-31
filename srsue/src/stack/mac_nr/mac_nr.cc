@@ -33,6 +33,7 @@ mac_nr::mac_nr(srsran::ext_task_sched_handle task_sched_) :
   proc_ra(*this, logger),
   proc_sr(logger),
   proc_bsr(logger),
+  proc_phr(logger),
   mux(*this, logger),
   demux(logger),
   pcap(nullptr)
@@ -68,6 +69,8 @@ int mac_nr::init(const mac_nr_args_t&  args_,
     logger.error("Couldn't initialize BSR procedure.");
     return SRSRAN_ERROR;
   }
+
+  proc_phr.init(phy, &task_sched);
 
   if (mux.init(rlc) != SRSRAN_SUCCESS) {
     logger.error("Couldn't initialize mux unit.");
@@ -109,6 +112,7 @@ void mac_nr::reset()
 
   // TODO: Implement all the steps in 5.9
   proc_bsr.reset();
+  proc_phr.reset();
   proc_sr.reset();
   proc_ra.reset();
   mux.reset();
@@ -140,6 +144,7 @@ void mac_nr::run_tti(const uint32_t tti)
   update_buffer_states();
 
   proc_bsr.step(tti, mac_buffer_states);
+  proc_phr.step();
   proc_sr.step(tti);
 
   // process received PDUs
@@ -397,6 +402,11 @@ void mac_nr::new_grant_ul(const uint32_t cc_idx, const mac_nr_grant_ul_t& grant,
   // Let BSR know there is a new grant, might have to send a BSR
   proc_bsr.new_grant_ul(grant.tbs);
 
+  proc_phr_nr::se_phr_ce_t phr_ce = {};
+  if (proc_phr.generate_phr_on_ul_grant(grant.tbs, mux.msg3_is_pending(), &phr_ce)) {
+    mux.generate_phr_mac_ce(phr_ce);
+  }
+
   // Assert UL HARQ entity
   if (ul_harq.at(cc_idx) == nullptr) {
     logger.error("HARQ entity %d has not been created", cc_idx);
@@ -456,7 +466,7 @@ int mac_nr::remove_tag_config(const uint32_t tag_id)
 
 int mac_nr::set_config(const srsran::phr_cfg_nr_t& phr_cfg)
 {
-  logger.info("Add phr config not supported yet");
+  proc_phr.set_config(phr_cfg);
   return SRSRAN_SUCCESS;
 }
 

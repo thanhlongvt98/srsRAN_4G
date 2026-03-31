@@ -174,17 +174,29 @@ struct tag_cfg_nr_t {
 };
 
 struct phr_cfg_nr_t {
-  int  periodic_timer;
-  int  prohibit_timer;
-  int  tx_pwr_factor_change;
-  bool extended;
+  enum class phr_mode_other_cg_t { none, real, virtual_value };
+
+  bool                enabled;
+  int                 periodic_timer;
+  int                 prohibit_timer;
+  int                 tx_pwr_factor_change;
+  bool                extended;
+  bool                multiple_phr;
+  bool                dummy;
+  bool                phr_type2_other_cell;
+  phr_mode_other_cg_t phr_mode_other_cg;
   phr_cfg_nr_t() { reset(); }
   void reset()
   {
+    enabled              = false;
     periodic_timer       = -1;
     prohibit_timer       = -1;
     tx_pwr_factor_change = -1;
     extended             = false;
+    multiple_phr         = false;
+    dummy                = false;
+    phr_type2_other_cell = false;
+    phr_mode_other_cg    = phr_mode_other_cg_t::none;
   }
 };
 

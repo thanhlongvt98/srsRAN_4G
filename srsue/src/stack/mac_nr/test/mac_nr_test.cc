@@ -60,14 +60,27 @@ public:
   }
   bool has_valid_sr_resource(uint32_t sr_id) override { return false; }
   void clear_pending_grants() override {}
+  bool get_se_phr_report(se_phr_report_t& report) override
+  {
+    report = phr_report;
+    return phr_report_valid;
+  }
 
   void set_timeadv_rar(uint32_t tti, uint32_t ta_cmd) final{};
   void set_timeadv(uint32_t tti, uint32_t ta_cmd) final{};
+
+  void set_se_phr_report(float phr_db, float p_cmax_dbm, float pathloss_db)
+  {
+    phr_report       = {phr_db, p_cmax_dbm, pathloss_db};
+    phr_report_valid = true;
+  }
 
 private:
   uint32_t prach_occasion                 = 0;
   uint32_t preamble_index                 = 0;
   int      preamble_received_target_power = 0;
+  bool     phr_report_valid               = false;
+  se_phr_report_t phr_report              = {};
 };
 
 class rrc_dummy : public rrc_interface_mac
@@ -881,6 +894,57 @@ int mac_nr_dl_retx_test()
   return SRSRAN_SUCCESS;
 }
 
+int mac_nr_ul_se_phr_test()
+{
+  const uint8_t tv[] = {0x04, 0x06, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x39, 0x2b, 0x35};
+
+  dummy_phy   phy;
+  rlc_dummy   rlc;
+  rrc_dummy   rrc;
+  stack_dummy stack;
+
+  mac_nr mac(&stack.task_sched);
+
+  mac_nr_args_t args = {};
+  const uint16_t crnti = 0x1001;
+  mac.init(args, &phy, &rlc, &rrc);
+  mac.set_crnti(crnti);
+  stack.init(&mac, &phy);
+
+  srsran::logical_channel_config_t config = {};
+  config.lcid                             = 4;
+  config.lcg                              = 6;
+  config.PBR                              = 0;
+  config.BSD                              = 1000;
+  config.priority                         = 11;
+  TESTASSERT(mac.setup_lcid(config) == SRSRAN_SUCCESS);
+
+  srsran::phr_cfg_nr_t phr_cfg = {};
+  phr_cfg.enabled              = true;
+  phr_cfg.periodic_timer       = 20;
+  phr_cfg.prohibit_timer       = 0;
+  phr_cfg.tx_pwr_factor_change = 1;
+  TESTASSERT(mac.set_config(phr_cfg) == SRSRAN_SUCCESS);
+
+  phy.set_se_phr_report(10.0f, 23.0f, 105.0f);
+  rlc.write_sdu(4, 6);
+
+  mac_interface_phy_nr::tb_action_ul_t    ul_action = {};
+  mac_interface_phy_nr::mac_nr_grant_ul_t mac_grant = {};
+  mac_grant.rnti                                    = crnti;
+  mac_grant.pid                                     = 0;
+  mac_grant.tti                                     = 0;
+  mac_grant.tbs                                     = sizeof(tv);
+
+  mac.new_grant_ul(0, mac_grant, &ul_action);
+
+  TESTASSERT(ul_action.tb.enabled == true);
+  TESTASSERT(memcmp(ul_action.tb.payload->msg, tv, sizeof(tv)) == 0);
+
+  mac.stop();
+  return SRSRAN_SUCCESS;
+}
+
 int main()
 {
 #if HAVE_PCAP
@@ -901,6 +965,7 @@ int main()
 
   TESTASSERT(mac_nr_ul_periodic_bsr_test() == SRSRAN_SUCCESS);
   TESTASSERT(mac_nr_dl_retx_test() == SRSRAN_SUCCESS);
+  TESTASSERT(mac_nr_ul_se_phr_test() == SRSRAN_SUCCESS);
 
   srslog::flush();
 

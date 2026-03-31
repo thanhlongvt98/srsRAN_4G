@@ -35,6 +35,14 @@ namespace srsran {
  **************************/
 
 struct phy_cfg_nr_t {
+  struct phr_power_ctrl_cfg_t {
+    bool  configured                  = false;
+    float p0_nominal_with_grant_dbm   = -76.0f;
+    float msg3_delta_preamble_db      = 0.0f;
+    float alpha                       = 1.0f;
+    float pathloss_calibration_db     = 62.0f;
+  };
+
   /**
    * SSB configuration
    */
@@ -55,6 +63,7 @@ struct phy_cfg_nr_t {
   srsran_csi_hl_cfg_t       csi      = {};
   srsran_carrier_nr_t       carrier  = {};
   ssb_cfg_t                 ssb      = {};
+  phr_power_ctrl_cfg_t      phr_power_ctrl = {};
   uint32_t                  t_offset = 0; ///< n-TimingAdvanceOffset
 
   phy_cfg_nr_t() {}

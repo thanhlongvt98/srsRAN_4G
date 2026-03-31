@@ -91,10 +91,25 @@ bool make_mac_dl_harq_cfg_nr_t(const pdsch_serving_cell_cfg_s& asn1_type, dl_har
 
 bool make_mac_phr_cfg_t(const phr_cfg_s& asn1_type, phr_cfg_nr_t* phr_cfg_nr)
 {
+  phr_cfg_nr->enabled              = true;
   phr_cfg_nr->extended             = asn1_type.ext;
   phr_cfg_nr->periodic_timer       = asn1_type.phr_periodic_timer.to_number();
   phr_cfg_nr->prohibit_timer       = asn1_type.phr_prohibit_timer.to_number();
   phr_cfg_nr->tx_pwr_factor_change = asn1_type.phr_tx_pwr_factor_change.to_number();
+  phr_cfg_nr->multiple_phr         = asn1_type.multiple_phr;
+  phr_cfg_nr->dummy                = asn1_type.dummy;
+  phr_cfg_nr->phr_type2_other_cell = asn1_type.phr_type2_other_cell;
+  switch (asn1_type.phr_mode_other_cg.value) {
+    case phr_cfg_s::phr_mode_other_cg_opts::real:
+      phr_cfg_nr->phr_mode_other_cg = phr_cfg_nr_t::phr_mode_other_cg_t::real;
+      break;
+    case phr_cfg_s::phr_mode_other_cg_opts::virtual_value:
+      phr_cfg_nr->phr_mode_other_cg = phr_cfg_nr_t::phr_mode_other_cg_t::virtual_value;
+      break;
+    default:
+      phr_cfg_nr->phr_mode_other_cg = phr_cfg_nr_t::phr_mode_other_cg_t::none;
+      break;
+  }
   return true;
 }
 

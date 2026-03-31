@@ -61,6 +61,7 @@ public:
                   const float    ta_base_sec) final;
   void set_timeadv_rar(uint32_t tti, uint32_t ta_cmd) final;
   void set_timeadv(uint32_t tti, uint32_t ta_cmd) final;
+  bool get_se_phr_report(se_phr_report_t& report) final;
 
   void set_earfcn(std::vector<uint32_t> earfcns);
   bool has_valid_sr_resource(uint32_t sr_id) final;

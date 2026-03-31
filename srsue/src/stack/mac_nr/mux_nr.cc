@@ -48,6 +48,9 @@ void mux_nr::reset()
 {
   std::lock_guard<std::mutex> lock(mutex);
   this->logical_channels.clear();
+  add_bsr_ce = no_bsr;
+  add_phr_ce = false;
+  phr_ce     = {};
 }
 
 int mux_nr::setup_lcid(const srsran::logical_channel_config_t& config)
@@ -85,6 +88,9 @@ srsran::unique_byte_buffer_t mux_nr::pdu_get_nolock(uint32_t max_pdu_len)
   if (!msg3_is_pending() && add_bsr_ce == sbsr_ce) {
     // reserve space for SBSR
     remaining_len -= 2;
+  }
+  if (!msg3_is_pending() && add_phr_ce) {
+    remaining_len -= 3;
   }
 
   // First add MAC SDUs
@@ -147,6 +153,10 @@ srsran::unique_byte_buffer_t mux_nr::pdu_get_nolock(uint32_t max_pdu_len)
     // TODO: implement LBSR support
     tx_pdu.add_sbsr_ce(mac.generate_sbsr());
     add_bsr_ce = no_bsr;
+  }
+  if (!msg3_is_pending() && add_phr_ce) {
+    tx_pdu.add_se_phr_ce(phr_ce.phr, phr_ce.pcmax);
+    add_phr_ce = false;
   }
 
   // Lastly, add variable-sized MAC CEs
@@ -237,6 +247,13 @@ void mux_nr::generate_bsr_mac_ce(const srsran::bsr_format_nr_t& format)
     default:
       logger.error("MUX can only be instructred to generate short or long BSRs.");
   }
+}
+
+void mux_nr::generate_phr_mac_ce(const proc_phr_nr::se_phr_ce_t& new_phr_ce)
+{
+  std::lock_guard<std::mutex> lock(mutex);
+  phr_ce     = new_phr_ce;
+  add_phr_ce = true;
 }
 
 } // namespace srsue

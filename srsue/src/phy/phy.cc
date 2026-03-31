@@ -19,6 +19,7 @@
  *
  */
 
+#include <cmath>
 #include <string>
 
 #include "srsran/common/band_helper.h"
@@ -387,6 +388,19 @@ float phy::get_phr()
 float phy::get_pathloss_db()
 {
   return common.get_pathloss();
+}
+
+bool phy::get_se_phr_report(se_phr_report_t& report)
+{
+  if (radio == nullptr || radio->get_info() == nullptr) {
+    return false;
+  }
+
+  report.phr_db      = get_phr();
+  report.p_cmax_dbm  = static_cast<float>(radio->get_info()->max_tx_gain);
+  report.pathloss_db = get_pathloss_db();
+  report.tx_power_dbm = report.p_cmax_dbm - report.phr_db;
+  return std::isfinite(report.phr_db) && std::isfinite(report.p_cmax_dbm);
 }
 
 void phy::prach_send(uint32_t preamble_idx, int allowed_subframe, float target_power_dbm, float ta_base_sec)

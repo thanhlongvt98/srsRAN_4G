@@ -622,9 +622,11 @@ bool cc_worker::work_ul()
     mac_ul_grant.rnti                                    = pusch_cfg.grant.rnti;
     mac_ul_grant.tti                                     = ul_slot_cfg.idx;
     mac_ul_grant.tbs                                     = pusch_cfg.grant.tb[0].tbs / 8;
+    mac_ul_grant.nof_prbs                                = pusch_cfg.grant.nof_prb;
     mac_ul_grant.ndi                                     = pusch_cfg.grant.tb[0].ndi;
     mac_ul_grant.rv                                      = pusch_cfg.grant.tb[0].rv;
     mac_ul_grant.is_rar_grant                            = (pusch_cfg.grant.rnti_type == srsran_rnti_type_ra);
+    phy.set_pending_phr_context(mac_ul_grant.nof_prbs, mac_ul_grant.is_rar_grant);
     phy.stack->new_grant_ul(0, mac_ul_grant, &ul_action);
 
     // Don't process further if MAC can't provide PDU

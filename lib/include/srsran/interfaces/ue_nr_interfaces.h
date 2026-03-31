@@ -108,6 +108,7 @@ public:
     uint32_t tti;
     uint8_t  pid;          // HARQ process ID
     uint32_t tbs;          // transport block size in Bytes
+    uint32_t nof_prbs;     // number of PRBs assigned to the current PUSCH
     uint8_t  ndi;          // Raw new data indicator extracted from DCI
     uint8_t  rv;           // Redundancy Version
     bool     is_rar_grant; // True if grant comes from RAR
@@ -255,6 +256,13 @@ struct phy_args_nr_t {
 class phy_interface_mac_nr
 {
 public:
+  struct se_phr_report_t {
+    float phr_db      = 0.0f;
+    float p_cmax_dbm  = 0.0f;
+    float pathloss_db = 0.0f;
+    float tx_power_dbm = 0.0f;
+  };
+
   // MAC informs PHY about UL grant included in RAR PDU
   virtual int set_rar_grant(uint32_t                                       rar_slot_idx,
                             std::array<uint8_t, SRSRAN_RAR_UL_GRANT_NBITS> packed_ul_grant,
@@ -284,6 +292,9 @@ public:
    * @brief Clear any configured downlink assignments and uplink grants
    */
   virtual void clear_pending_grants() = 0;
+
+  /// Retrieves the latest PHY view of the serving-cell single-entry PHR inputs.
+  virtual bool get_se_phr_report(se_phr_report_t& report) = 0;
 };
 
 class phy_interface_rrc_nr

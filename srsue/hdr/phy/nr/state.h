@@ -28,6 +28,7 @@
 #include "srsran/interfaces/ue_nr_interfaces.h"
 #include "srsran/srsran.h"
 #include <array>
+#include <cmath>
 #include <mutex>
 #include <vector>
 
@@ -75,6 +76,10 @@ private:
 
   /// Other measurements
   std::atomic<float> ul_ext_cfo_hz = {0.0f};
+  std::atomic<float> latest_ul_power_db = {NAN};
+  std::atomic<float> latest_rsrp_dbm    = {NAN};
+  std::atomic<uint32_t> latest_pusch_nof_prbs = {0};
+  std::atomic<bool>     latest_pusch_is_msg3  = {false};
 
   /**
    * @brief Resets all metrics (unprotected)
@@ -418,6 +423,9 @@ public:
   {
     std::lock_guard<std::mutex> lock(metrics_mutex);
     ch_metrics.set(m);
+    if (std::isfinite(m.rsrp)) {
+      latest_rsrp_dbm.store(m.rsrp);
+    }
   }
 
   /**
@@ -438,6 +446,9 @@ public:
   {
     std::lock_guard<std::mutex> lock(metrics_mutex);
     ul_metrics.set(m);
+    if (std::isfinite(m.power)) {
+      latest_ul_power_db.store(m.power);
+    }
   }
 
   /**
@@ -468,6 +479,20 @@ public:
     // Reset all metrics
     reset_metrics_();
   }
+
+  float get_latest_ul_power_db() const { return latest_ul_power_db.load(); }
+
+  float get_latest_rsrp_dbm() const { return latest_rsrp_dbm.load(); }
+
+  void set_pending_phr_context(uint32_t nof_prbs, bool is_msg3_grant)
+  {
+    latest_pusch_nof_prbs.store(nof_prbs);
+    latest_pusch_is_msg3.store(is_msg3_grant);
+  }
+
+  uint32_t get_latest_pusch_nof_prbs() const { return latest_pusch_nof_prbs.load(); }
+
+  bool get_latest_pusch_is_msg3() const { return latest_pusch_is_msg3.load(); }
 
   /**
    * @brief Resets all PHY measurements (protected)

@@ -58,6 +58,7 @@ public:
 
   void set_timeadv_rar(uint32_t tti, uint32_t ta_cmd) final{};
   void set_timeadv(uint32_t tti, uint32_t ta_cmd) final{};
+  bool get_se_phr_report(se_phr_report_t& report) override { return false; }
 
 private:
   uint32_t prach_occasion                 = 0;

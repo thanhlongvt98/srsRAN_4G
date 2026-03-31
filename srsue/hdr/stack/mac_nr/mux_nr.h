@@ -23,6 +23,7 @@
 #define SRSUE_MUX_NR_H
 
 #include "mac_nr_interfaces.h"
+#include "proc_phr_nr.h"
 #include "proc_bsr_nr.h"
 #include "srsran/common/byte_buffer.h"
 #include "srsran/common/common.h"
@@ -58,6 +59,7 @@ public:
 
   // Interface for BSR procedure
   void generate_bsr_mac_ce(const srsran::bsr_format_nr_t& format);
+  void generate_phr_mac_ce(const proc_phr_nr::se_phr_ce_t& phr_ce);
 
 private:
   // internal helper methods
@@ -82,6 +84,8 @@ private:
 
   enum bsr_req_t { no_bsr, sbsr_ce, lbsr_ce };
   std::atomic<bsr_req_t> add_bsr_ce = {bsr_req_t::no_bsr}; /// BSR procedure requests MUX to add a BSR CE
+  bool                   add_phr_ce = false;
+  proc_phr_nr::se_phr_ce_t phr_ce   = {};
 
   // Mutex for exclusive access
   std::mutex mutex;

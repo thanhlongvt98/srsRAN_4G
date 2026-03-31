@@ -151,6 +151,7 @@ public:
   void           set_earfcn(std::vector<uint32_t> earfcns);
   bool           has_valid_sr_resource(uint32_t sr_id) final;
   void           clear_pending_grants() final;
+  bool           get_se_phr_report(se_phr_report_t& report) final;
   int            set_rar_grant(uint32_t                                       rar_slot_idx,
                                std::array<uint8_t, SRSRAN_RAR_UL_GRANT_NBITS> packed_ul_grant,
                                uint16_t                                       rnti,

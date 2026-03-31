@@ -21,6 +21,7 @@
 set(SOURCES mac_nr.cc
             proc_ra_nr.cc
             proc_bsr_nr.cc
+            proc_phr_nr.cc
             proc_sr_nr.cc
             mux_nr.cc
             demux_nr.cc

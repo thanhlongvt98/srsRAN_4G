@@ -477,6 +477,15 @@ void rrc_nr::handle_sib1(const sib1_s& sib1)
                                     &phy_cfg.pusch)) {
     logger.warning("Could not set PUSCH config.");
   }
+  const auto& pusch_cfg_common = sib1.serving_cell_cfg_common.ul_cfg_common.init_ul_bwp.pusch_cfg_common.setup();
+  if (pusch_cfg_common.p0_nominal_with_grant_present) {
+    phy_cfg.phr_power_ctrl.configured                = true;
+    phy_cfg.phr_power_ctrl.p0_nominal_with_grant_dbm =
+        static_cast<float>(pusch_cfg_common.p0_nominal_with_grant);
+  }
+  if (pusch_cfg_common.msg3_delta_preamb_present) {
+    phy_cfg.phr_power_ctrl.msg3_delta_preamble_db = static_cast<float>(pusch_cfg_common.msg3_delta_preamb);
+  }
 
   // Apply PUCCH Config Common
   fill_phy_pucch_cfg_common(sib1.serving_cell_cfg_common.ul_cfg_common.init_ul_bwp.pucch_cfg_common.setup(),
@@ -1179,6 +1188,13 @@ bool rrc_nr::apply_mac_cell_group(const mac_cell_group_cfg_s& mac_cell_group_cfg
       }
       if (mac->set_config(phr_cfg_nr) != SRSRAN_SUCCESS) {
         logger.warning("Unable to set PHR config");
+        return false;
+      }
+    } else {
+      phr_cfg_nr_t phr_cfg_nr;
+      phr_cfg_nr.reset();
+      if (mac->set_config(phr_cfg_nr) != SRSRAN_SUCCESS) {
+        logger.warning("Unable to release PHR config");
         return false;
       }
     }

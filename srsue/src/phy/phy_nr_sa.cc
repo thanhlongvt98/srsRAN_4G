@@ -22,6 +22,8 @@
 #include "srsue/hdr/phy/phy_nr_sa.h"
 #include "srsran/common/standard_streams.h"
 #include "srsran/srsran.h"
+#include <algorithm>
+#include <cmath>
 
 namespace srsue {
 
@@ -247,6 +249,37 @@ void phy_nr_sa::set_timeadv_rar(uint32_t tti, uint32_t ta_cmd)
 void phy_nr_sa::set_timeadv(uint32_t tti, uint32_t ta_cmd)
 {
   sync.add_ta_cmd_new(tti, ta_cmd);
+}
+
+bool phy_nr_sa::get_se_phr_report(se_phr_report_t& report)
+{
+  if (radio == nullptr || radio->get_info() == nullptr) {
+    return false;
+  }
+
+  const float latest_rsrp_dbm = workers.get_latest_rsrp_dbm();
+  if (!std::isfinite(latest_rsrp_dbm)) {
+    return false;
+  }
+
+  const uint32_t nof_prbs = std::max(workers.get_latest_pusch_nof_prbs(), 1U);
+  const bool     is_msg3  = workers.get_latest_pusch_is_msg3();
+  const float    p_cmax_dbm = static_cast<float>(radio->get_info()->max_tx_gain);
+  const float    raw_pathloss_proxy_db = p_cmax_dbm - latest_rsrp_dbm;
+  const float    pathloss_db =
+      raw_pathloss_proxy_db + config_nr.phr_power_ctrl.pathloss_calibration_db;
+  const float p0_dbm = config_nr.phr_power_ctrl.p0_nominal_with_grant_dbm +
+                       (is_msg3 ? config_nr.phr_power_ctrl.msg3_delta_preamble_db : 0.0f);
+  const float alpha = is_msg3 ? 1.0f : config_nr.phr_power_ctrl.alpha;
+  const float estimated_tx_power_dbm =
+      std::min(p_cmax_dbm, 10.0f * std::log10(static_cast<float>(nof_prbs)) + p0_dbm + alpha * pathloss_db);
+
+  report.p_cmax_dbm = p_cmax_dbm;
+  report.pathloss_db = pathloss_db;
+  report.tx_power_dbm = estimated_tx_power_dbm;
+  report.phr_db = p_cmax_dbm - estimated_tx_power_dbm;
+
+  return std::isfinite(report.phr_db) && std::isfinite(report.pathloss_db) && std::isfinite(report.tx_power_dbm);
 }
 
 int phy_nr_sa::set_rar_grant(uint32_t                                       rar_slot_idx,

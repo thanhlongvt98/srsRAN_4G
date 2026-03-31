@@ -25,6 +25,7 @@
 #include "dl_harq_nr.h"
 #include "mac_nr_interfaces.h"
 #include "proc_bsr_nr.h"
+#include "proc_phr_nr.h"
 #include "proc_ra_nr.h"
 #include "proc_sr_nr.h"
 #include "srsran/common/mac_pcap.h"
@@ -180,6 +181,7 @@ private:
   proc_ra_nr  proc_ra;
   proc_sr_nr  proc_sr;
   proc_bsr_nr proc_bsr;
+  proc_phr_nr proc_phr;
   mux_nr      mux;
   demux_nr    demux;
 
