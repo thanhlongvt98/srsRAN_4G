@@ -44,6 +44,7 @@
 #include <stdlib.h>
 #include <string>
 #include <sys/mman.h>
+#include <time.h>
 #include <unistd.h>
 
 extern std::atomic<bool> simulate_rlf;
@@ -60,6 +61,7 @@ static bool              do_metrics     = false;
 static metrics_stdout*   metrics_screen = nullptr;
 static srslog::sink*     log_sink       = nullptr;
 static std::atomic<bool> running        = {true};
+static double            connection_delay_sec = -1.0; // -1 means use random delay (default behavior)
 
 /**********************************************************************
  *  Program arguments processing
@@ -500,6 +502,10 @@ static int parse_args(all_args_t* args, int argc, char* argv[])
         bpo::value<bool>(&args->stack.have_tti_time_stats)->default_value(true),
         "Calculate TTI execution statistics")
 
+    ("ue.connection_delay",
+        bpo::value<double>(&connection_delay_sec)->default_value(-1.0),
+        "Delay in seconds before UE connects. If -1 (default), uses random delay between 5-10 seconds")
+
     ;
 
   // Positional options - config file location
@@ -803,6 +809,23 @@ int main(int argc, char* argv[])
 
   pthread_t input;
   pthread_create(&input, nullptr, &input_loop, &args);
+
+  // Delay before switch_on() to stagger UE connections
+  double delay;
+  if (connection_delay_sec >= 0.0) {
+    // Use provided delay from command line
+    delay = connection_delay_sec;
+    cout << "Waiting " << delay << " seconds before attaching UE (PID: " << getpid() << ", delay from argument)..." << endl;
+  } else {
+    // Random delay based on process ID and current time to ensure uniqueness per UE instance
+    unsigned int seed = (unsigned int)(time(nullptr) + getpid());
+    srand(seed);
+    // Random delay between 5.0 and 10.0 seconds
+    delay = 5.0 + (rand() / (double)RAND_MAX) * 10.0;
+    cout << "Waiting " << delay << " seconds before attaching UE (PID: " << getpid() << ", random delay)..." << endl;
+  }
+  sleep((unsigned int)delay);
+  usleep((unsigned int)((delay - (unsigned int)delay) * 1000000)); // Sleep remaining microseconds
 
   cout << "Attaching UE..." << endl;
   ue.switch_on();
